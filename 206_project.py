@@ -102,7 +102,7 @@ def omdbsearch(query):
         codecfile = codecs.open(CACHE_FNAME,'w')
         codecfile.write(json.dumps(CACHE_DICTION))
         codecfile.close()
-        return CACHE_DICTION[iden]
+        return ret
 
 # Run it a couple times so that there is data to put in the table.
 
@@ -173,15 +173,19 @@ class Movie():
         self.cast = cast
 
     def topbillfinder(self):
-        self.castlist = self.cast.split(", ")
-        self.topbilled = self.castlist[0]
+        castlist = self.cast.split(", ")
+        self.topbilled = castlist[0]
         return self.topbilled
+
+    def langcount(self):
+        return langcount
 
     def __str__(self):
         return "========== " + self.name + " has been assigned to a class."
 
 for movie in movie_master_list:
     statement4 = "SELECT screen_name FROM Tweet_Searchdb"
+
 
 
 for searchres in CACHE_DICTION["OMDB_search"]:
@@ -202,60 +206,106 @@ for searchres in CACHE_DICTION["OMDB_search"]:
     else:
         print("ERROR ERROR ERROR ERROR ERROR")
 
-queried_statuses = []
+# print(CLASS_StarWars7.topbillfinder())
+
+
+statuses_w_movie_titles = []
 
 for movies in movie_master_list:
     cur.execute("SELECT text from Tweet_Searchdb WHERE instr(text, 'Star Wars')")
     statuslist = cur.fetchall()[0]
     for statuses in statuslist:
-        queried_statuses.append(statuses)
+        statuses_w_movie_titles.append(statuses)
 for movies in movie_master_list:
     cur.execute("SELECT text from Tweet_Searchdb WHERE instr(text, 'Guardians of the Galaxy')")
     statuslist = cur.fetchall()[0]
     for statuses in statuslist:
-        queried_statuses.append(statuses)
+        statuses_w_movie_titles.append(statuses)
 for movies in movie_master_list:
     cur.execute("SELECT text from Tweet_Searchdb WHERE instr(text, 'Spider-Man')")
     statuslist = cur.fetchall()[0]
     for statuses in statuslist:
-        queried_statuses.append(statuses)
+        statuses_w_movie_titles.append(statuses)
 
-print(queried_statuses)
+# print(statuses_w_movie_titles)
+
+# Make a query using an INNER JOIN to get a list of tuples with 2 elements in each tuple: the user screenname and the text of the tweet --
+# for each tweet that has been retweeted more than 50 times. Save the resulting list of tuples in a variable called joined_result.
+# cur.execute("SELECT Users.screen_name, Tweets.text FROM Users INNER JOIN Tweets ON Tweets.user_id = Users.user_id where Tweets.retweets > 30")
+# joined_result = cur.fetchall()
+
+# cur.execute("SELECT Tweet_Searchdb.search_term FROM Tweet_Searchdb INNER JOIN OMDBdb ON Tweet_Searchdb.search_term = OMDBdb.IMDBid where Tweet_Searchdb.retweets > 10")
+cur.execute("SELECT OMDBdb.Title FROM OMDBdb INNER JOIN Tweet_Searchdb ON Tweet_Searchdb.search_term = OMDBdb.IMDBid where Tweet_Searchdb.retweets > 10")
+Movienames_w_retweets = cur.fetchall()
+
+
+def wordcounter(strtext):
+    strtext = strtext.split()
+    counter = collections.Counter(strtext)
+    return counter
+
+fullstr = " ".join(statuses_w_movie_titles)
+wordcount = dict(wordcounter(fullstr))
+
+outputf = codecs.open("output.txt", "w")
+outputf.write("======RESULTS======\n\n")
+outputf.write("The three movies in comparioson are:\n")
+for each in movie_master_list:
+    outputf.write(each)
+    outputf.write("\n")
+outputf.write("\nThe top billed actor in each movie is:\n")
+outputf.write(CLASS_Guardians.topbillfinder())
+outputf.write("\n")
+outputf.write(CLASS_StarWars7.topbillfinder())
+outputf.write("\n")
+outputf.write(CLASS_Spiderman.topbillfinder())
+outputf.write("\n")
+outputf.write("\nRecent tweets that included these movie titles were:")
+for each in statuses_w_movie_titles:
+    outputf.write("\n")
+    # outputf.write(each)
+    #THERE MAY BE A CODEC ERROR#
+outputf.write("\nTweets with more than 10 retweets included the following movies:\n")
+for each in Movienames_w_retweets:
+    outputf.write(each[0])
+    outputf.write("\n")
+outputf.write("\nHere are the most common words from those tweets and how often they were mentioned.\n")
+# outputf.write(str(wordcount))
+#THERE MAY BE A CODEC ERROR#
+outputf.write("\nThank you.\n")
+
 
 
 
 # Put your tests here, with any edits you now need from when you turned them in with your project plan.
-# class Task(unittest.TestCase):
-#     def test_langcount1(self):
-#         titanic = Movie("Titanic")
-#         self.assertEqual(type(titanic.langcount()), type(0))
-#     def test_langcount2(self):
-#         titanic = Movie("Titanic")
-#         self.assertEqual(titanic.langcount(), 2)
-#     def test_topbillfinder1(self):
-#         titanic = Movie("Titanic")
-#         self.assertEqual(type(titanic.topbillfinder()), type("a"))
-#     def test_topbillfinder2(self):
-#         titanic = Movie("Titanic")
-#         self.assertEqual(titanic.topbillfinder(), "Leonardo DiCaprio")
-#     def test_counter1(self):
-#         self.assertEqual(type(wordcounter), type(collections.Counter(a=0)))
-#     def test_counter2(self):
-#         self.assertEqual(type(wordcounter_dic["a"]), type(0))
-#     def test_Movies1(self):
-#         conn = sqlite3.connect('final_project_db.db')
-#         cur = conn.cursor()
-#         cur.execute('SELECT * FROM OMDBdb');
-#         result = cur.fetchall()
-#         self.assertTrue(len(result)==2)
-#         conn.close()
-#     def test_Movies2(self):
-#         conn = sqlite3.connect('final_project_db.db')
-#         cur = conn.cursor()
-#         cur.execute('SELECT director FROM OMDBdb');
-#         result = cur.fetchall()
-#         self.assertEqual(type(result[0][0]), type("Alfred Hitchcock"))
-#         conn.close()
+class Task(unittest.TestCase):
+    def test_langcount1(self):
+        self.assertEqual(type(CLASS_StarWars7.langcount()), type(0))
+    def test_langcount2(self):
+        self.assertEqual(CLASS_StarWars7.langcount(), 7)
+    def test_topbillfinder1(self):
+        titanic = Movie("Titanic")
+        self.assertEqual(type(titanic.topbillfinder()), type("a"))
+    def test_topbillfinder2(self):
+        self.assertEqual(CLASS_StarWars7.topbillfinder(), "Harrison Ford")
+    def test_counter1(self):
+        self.assertEqual(type(wordcounter("abc")), type(collections.Counter({"a":0})))
+    def test_counter2(self):
+        self.assertEqual(type(wordcount), type({"a":0}))
+    def test_Movies1(self):
+        conn = sqlite3.connect('final_project_db.db')
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM OMDBdb');
+        result = cur.fetchall()
+        self.assertTrue(len(result)==3)
+        conn.close()
+    def test_Movies2(self):
+        conn = sqlite3.connect('final_project_db.db')
+        cur = conn.cursor()
+        cur.execute('SELECT director FROM OMDBdb');
+        result = cur.fetchall()
+        self.assertEqual(type(result[0][0]), type("Alfred Hitchcock"))
+        conn.close()
 
 # Remember to invoke your tests so they will run! (Recommend using the verbosity=2 argument.)
 if __name__ == "__main__":
