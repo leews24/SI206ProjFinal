@@ -102,19 +102,19 @@ def omdbsearch(query):
         codecfile = codecs.open(CACHE_FNAME,'w')
         codecfile.write(json.dumps(CACHE_DICTION))
         codecfile.close()
-        return ret
+        return CACHE_DICTION[iden]
 
 # Run it a couple times so that there is data to put in the table.
 
-movie_master_list = ["Guardians of the Galaxy Vol. 2", "Star Wars: The Force Awakens", "The Shining"]
+movie_master_list = ["Guardians of the Galaxy Vol. 2", "Star Wars: The Force Awakens", "Spider-Man: Homecoming"]
 
 for movies in movie_master_list:
-    a = omdbsearch(movies)
+    omdbsearch(movies)
 
 tweetuser("UMich")
 tweetsearch("Guardians of the Galaxy Vol. 2")
 tweetsearch("Star Wars Star Wars: The Force Awakens")
-tweetsearch("The Shining")
+tweetsearch("Spider-Man: Homecoming")
 
 
 # Create a database for this project that will hold all the cached data.
@@ -126,18 +126,23 @@ cur.execute('DROP TABLE IF EXISTS Tweet_Searchdb')
 
 table_spec = 'CREATE TABLE IF NOT EXISTS '
 table_spec += 'Tweet_Searchdb (tweet_id string PRIMARY KEY, '
-table_spec += 'search_term TEXT, text TEXT, user_id TEXT, retweets INTEGER)'
+table_spec += 'search_term TEXT, text TEXT, user_id TEXT, screen_name TEXT, retweets INTEGER)'
 cur.execute(table_spec)
-statement1 = 'INSERT INTO Tweet_Searchdb VALUES (?,?,?,?,?)'
+statement1 = 'INSERT INTO Tweet_Searchdb VALUES (?,?,?,?,?,?)'
 for searchres in CACHE_DICTION["Tweet_search"]:
     for tweets in CACHE_DICTION["Tweet_search"][searchres]["statuses"]:
-        cur.execute(statement1, (tweets["id_str"], CACHE_DICTION["Tweet_search"][searchres]["search_metadata"]["query"], tweets["text"], tweets["user"]["id_str"], tweets["retweet_count"]))
+        cur.execute(statement1, (tweets["id_str"], CACHE_DICTION["Tweet_search"][searchres]["search_metadata"]["query"], tweets["text"], tweets["user"]["id_str"], tweets["user"]["screen_name"], tweets["retweet_count"]))
 statement1a = 'UPDATE Tweet_Searchdb SET search_term = "tt2488496" WHERE search_term = "Star+Wars+Star+Wars%3A+The+Force+Awakens"'
 statement1b = 'UPDATE Tweet_Searchdb SET search_term = "tt3896198" WHERE search_term = "Guardians+of+the+Galaxy+Vol.+2"'
-statement1c = 'UPDATE Tweet_Searchdb SET search_term = "tt0081505" WHERE search_term = "The+Shining"'
+statement1c = 'UPDATE Tweet_Searchdb SET search_term = "tt0081505" WHERE search_term = "Spider-Man%3A+Homecoming"'
 cur.execute(statement1a)
 cur.execute(statement1b)
 cur.execute(statement1c)
+
+cur.execute("SELECT screen_name FROM Tweet_Searchdb")
+tweet_users = cur.fetchall()
+for users in tweet_users:
+    tweetuser(users[0])
 
 cur.execute('DROP TABLE IF EXISTS Tweet_Usersdb')
 
@@ -158,14 +163,6 @@ statement3 = 'INSERT INTO OMDBdb VALUES (?,?,?,?,?,?)'
 for searchres in CACHE_DICTION["OMDB_search"]:
     cur.execute(statement3, (CACHE_DICTION["OMDB_search"][searchres]["imdbID"],CACHE_DICTION["OMDB_search"][searchres]["Title"],CACHE_DICTION["OMDB_search"][searchres]["Director"],len(CACHE_DICTION["OMDB_search"][searchres]["Language"]),CACHE_DICTION["OMDB_search"][searchres]["imdbRating"],CACHE_DICTION["OMDB_search"][searchres]["Actors"]))
 
-for searchres in CACHE_DICTION["Tweet_search"]:
-    for tweets in CACHE_DICTION["Tweet_search"][searchres]["statuses"]:
-
-
-
-# apiumich = api.get_user("Umich")
-# cur.execute(statement_user, (apiumich["id"], apiumich["screen_name"], apiumich["favourites_count"], apiumich["description"]))
-
 conn.commit()
 
 class Movie():
@@ -183,15 +180,19 @@ class Movie():
     def __str__(self):
         return "========== " + self.name + " has been assigned to a class."
 
+for movie in movie_master_list:
+    statement4 = "SELECT screen_name FROM Tweet_Searchdb"
+
+
 for searchres in CACHE_DICTION["OMDB_search"]:
     name = CACHE_DICTION["OMDB_search"][searchres]["Title"]
     director = CACHE_DICTION["OMDB_search"][searchres]["Director"]
     IMDB_rating = CACHE_DICTION["OMDB_search"][searchres]["imdbRating"]
     cast = CACHE_DICTION["OMDB_search"][searchres]["Actors"]
     langcount = len(CACHE_DICTION["OMDB_search"][searchres]["Language"])
-    if CACHE_DICTION["OMDB_search"][searchres]["imdbID"] == "tt0081505":
-        CLASS_The_Shining = Movie(name, director, IMDB_rating, cast, langcount)
-        print(CLASS_The_Shining)
+    if CACHE_DICTION["OMDB_search"][searchres]["imdbID"] == "tt2250912":
+        CLASS_Spiderman = Movie(name, director, IMDB_rating, cast, langcount)
+        print(CLASS_Spiderman)
     elif CACHE_DICTION["OMDB_search"][searchres]["imdbID"] == "tt3896198":
         CLASS_Guardians = Movie(name, director, IMDB_rating, cast, langcount)
         print(CLASS_Guardians)
@@ -200,8 +201,26 @@ for searchres in CACHE_DICTION["OMDB_search"]:
         print(CLASS_StarWars7)
     else:
         print("ERROR ERROR ERROR ERROR ERROR")
- 
 
+queried_statuses = []
+
+for movies in movie_master_list:
+    cur.execute("SELECT text from Tweet_Searchdb WHERE instr(text, 'Star Wars')")
+    statuslist = cur.fetchall()[0]
+    for statuses in statuslist:
+        queried_statuses.append(statuses)
+for movies in movie_master_list:
+    cur.execute("SELECT text from Tweet_Searchdb WHERE instr(text, 'Guardians of the Galaxy')")
+    statuslist = cur.fetchall()[0]
+    for statuses in statuslist:
+        queried_statuses.append(statuses)
+for movies in movie_master_list:
+    cur.execute("SELECT text from Tweet_Searchdb WHERE instr(text, 'Spider-Man')")
+    statuslist = cur.fetchall()[0]
+    for statuses in statuslist:
+        queried_statuses.append(statuses)
+
+print(queried_statuses)
 
 
 
